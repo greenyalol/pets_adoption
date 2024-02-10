@@ -12,9 +12,8 @@ const connection = mysql.createConnection({
 connection.connect();
 
 function execQuery(myQuery, ...params) {
-    console.log(params);
     return new Promise((resolve, reject) => {
-        connection.query(myQuery, params, (err, results, fields) => {
+        const c = connection.query(myQuery, params, (err, results, fields) => {
             err ? reject(err) : resolve(JSON.parse(JSON.stringify(results)));
         })
     })
@@ -105,6 +104,35 @@ async function changeStatus(newStatus, petID, userID) {
     connection.end();
 }
 
+async function addFavorite(userID, petID) {
+    const addFavQuery = `INSERT INTO Favorites (pet_id, owner_id) VALUES (?, ?)`;
+    const addQuery = await execQuery(addFavQuery, petID, userID).catch((err) => {
+        throw err.message;
+    });
+}
+
+async function deleteFavorite(userID, petID) {
+    const addFavQuery = `DELETE FROM Favorites WHERE pet_id = ? AND owner_id = ?`;
+    const addQuery = await execQuery(addFavQuery, petID, userID).catch((err) => {
+        throw err.message;
+    });
+}
+
+async function getPetsByUser(userID) {
+    const getPetsByStatusQuery = `SELECT DISTINCT  name, pet_id, mp.status_id, owner_id, link
+    FROM (SELECT * FROM Pets p WHERE owner_id = ?) mp
+    INNER JOIN 
+    Statuses s ON mp.status_id = s.status_id
+    INNER JOIN 
+    Pictures pic USING (pet_id)`;
+
+    const getPetsByStatus = await execQuery(getPetsByStatusQuery, userID).catch((err) => {
+        throw err.message;
+    });
+
+    return getPetsByStatus;
+}
+
 
 async function test() {
     try {
@@ -116,7 +144,10 @@ async function test() {
         //     undefined,
         //     undefined,
         //     10);
-        await changeStatus('adopted', 1, 1);
+        //await changeStatus('fostered', 1, 1);
+        //await addFavorite(1, 5);
+        //deleteFavorite(1, 5);
+        //const a = await getPetsByUser(1);
         // console.log(pets.length);
     } catch (err) {
         console.log(err);
