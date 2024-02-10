@@ -16,10 +16,11 @@ function execQuery(myQuery, ...params) {
         const c = connection.query(myQuery, params, (err, results, fields) => {
             err ? reject(err) : resolve(JSON.parse(JSON.stringify(results)));
         })
+        console.log(c);
     })
 }
 
-function getPetByID(id) {
+async function getPetByID(id) {
     const query = `SELECT name, status_name, type_name, height, weight, color, bio, dietary, breed_name
         FROM Pets p 
         INNER JOIN Statuses s ON p.status_id  = s.status_id
@@ -32,14 +33,31 @@ function getPetByID(id) {
     return pet;
 }
 
-function advSearch(
-    petStatus = "status_name",
-    petType = "type_name",
+async function advSearch(
+    petStatus,
+    petType,
     petName = '',
     minHeight = 0,
     maxHeight = 999,
     minWeight = 0,
     maxWeight = 999) {
+
+    console.log(petStatus,
+        petType,
+        petName,
+        minHeight,
+        maxHeight,
+        minWeight,
+        maxWeight);
+
+    // if (!petStatus) {
+    //     petStatus = true;
+    // }
+    // const sql = ''
+    // !petStatus ?
+    //     sql = `SELECT status_name FROM Statuses s2 WHERE 1=1`
+    //     :
+    //     sql = `SELECT status_name FROM Statuses s2 WHERE status_name = ?`
 
     const query = `SELECT name, status_name, type_name, height, weight, color, bio, dietary, breed_name
         FROM Pets p 
@@ -47,15 +65,15 @@ function advSearch(
         INNER JOIN Pet_types pt ON p.type_id = pt.type_id 
         INNER JOIN Breeds b ON p.breed_id = b.breed_id 
         WHERE 
-        status_name IN (SELECT status_name FROM Statuses s2 WHERE status_name = ?)
+        status_name IN (SELECT status_name FROM Statuses s2 WHERE status_name = IFNULL(?, status_name))
         AND 
         name LIKE '%${petName}%'
         AND
-        type_name IN (SELECT type_name FROM Pet_types pt2 WHERE type_name = ?)
+        type_name IN (SELECT type_name FROM Pet_types pt2 WHERE type_name = IFNULL(?, type_name))
         AND
-        height > ? AND height < ?
+        height BETWEEN ? AND ?
         AND 
-        weight > ? AND weight < ?`
+        weight BETWEEN ? AND ?`
 
     const pets = execQuery(query, petStatus, petType, minHeight, maxHeight, minWeight, maxWeight).catch((err) => {
         throw err.message
@@ -64,7 +82,7 @@ function advSearch(
 }
 
 async function changeStatus(newStatus, petID, userID) {
-
+    console.log(newStatus, petID, userID);
     connection.beginTransaction((err) => {
         if (err) throw err;
     })
@@ -134,32 +152,6 @@ async function getPetsByUser(userID) {
 }
 
 
-async function test() {
-    try {
-        // const res = await getPetByID(4);
-        // const pets = await advSearch(undefined,
-        //     undefined,
-        //     undefined,
-        //     undefined,
-        //     undefined,
-        //     undefined,
-        //     10);
-        //await changeStatus('fostered', 1, 1);
-        //await addFavorite(1, 5);
-        //deleteFavorite(1, 5);
-        //const a = await getPetsByUser(1);
-        // console.log(pets.length);
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-
-test();
-
-// connection.query('SELECT * FROM Pets', (err, rows, fields) => {
-//     if (err) throw err
-//     console.log(rows);
-// })
-
-// connection.end();
+module.exports = {
+    getPetByID, advSearch, changeStatus, addFavorite, deleteFavorite, getPetsByUser
+};
