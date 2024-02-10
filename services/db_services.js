@@ -12,12 +12,10 @@ const connection = mysql.createConnection({
 connection.connect();
 
 function execQuery(myQuery, ...params) {
-    console.log(params);
     return new Promise((resolve, reject) => {
         const c = connection.query(myQuery, params, (err, results, fields) => {
             err ? reject(err) : resolve(JSON.parse(JSON.stringify(results)));
         })
-        console.log(c);
     })
 }
 
@@ -149,8 +147,7 @@ async function test() {
         //await changeStatus('fostered', 1, 1);
         //await addFavorite(1, 5);
         //deleteFavorite(1, 5);
-        const a = await getPetsByUser(1);
-        console.log(a);
+        //const a = await getPetsByUser(1);
         // console.log(pets.length);
     } catch (err) {
         console.log(err);
