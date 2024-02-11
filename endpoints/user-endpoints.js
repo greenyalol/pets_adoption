@@ -2,8 +2,11 @@ const { getPetByID, advSearch, changeStatus, addFavorite, deleteFavorite, getPet
 const express = require('express')
 require('dotenv').config({ path: '../.env' });
 const Ajv = require("ajv")
+var cors = require('cors')
 
 const app = express();
+
+app.use(cors())
 app.use(express.json());
 const ajv = new Ajv();
 
@@ -75,6 +78,7 @@ app.put('/pets/:id&:status/adopt', async (req, res) => {
     }
 })
 
+//get pets by user
 app.get('/pets/user/:id', async (req, res) => {
     const userID = req.params.id; //get user id by token 
     try {
