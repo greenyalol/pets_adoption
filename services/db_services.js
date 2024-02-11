@@ -21,11 +21,12 @@ function execQuery(myQuery, ...params) {
 }
 
 async function getPetByID(id) {
-    const query = `SELECT name, status_name, type_name, height, weight, color, bio, dietary, breed_name
+    const query = `SELECT DISTINCT hypoallergenic, link, name, status_name, type_name, height, weight, color, bio, dietary, breed_name
         FROM Pets p 
         INNER JOIN Statuses s ON p.status_id  = s.status_id
         INNER JOIN Pet_types pt ON p.type_id = pt.type_id 
         INNER JOIN Breeds b ON p.breed_id = b.breed_id 
+        INNER JOIN Pictures pic ON p.pet_id = pic.pet_id 
         WHERE p.pet_id = ?`;
     const pet = execQuery(query, id).catch((err) => {
         throw err.message
@@ -59,11 +60,12 @@ async function advSearch(
     //     :
     //     sql = `SELECT status_name FROM Statuses s2 WHERE status_name = ?`
 
-    const query = `SELECT name, status_name, type_name, height, weight, color, bio, dietary, breed_name
+    const query = `SELECT DISTINCT p.pet_id, name, link, status_name, type_name, height, weight, color, bio, dietary, breed_name
         FROM Pets p 
         INNER JOIN Statuses s ON p.status_id  = s.status_id
         INNER JOIN Pet_types pt ON p.type_id = pt.type_id 
-        INNER JOIN Breeds b ON p.breed_id = b.breed_id 
+        INNER JOIN Breeds b ON p.breed_id = b.breed_id
+        INNER JOIN Pictures pic ON p.pet_id = pic.pet_id  
         WHERE 
         status_name IN (SELECT status_name FROM Statuses s2 WHERE status_name = IFNULL(?, status_name))
         AND 
@@ -137,7 +139,7 @@ async function deleteFavorite(userID, petID) {
 }
 
 async function getPetsByUser(userID) {
-    const getPetsByStatusQuery = `SELECT DISTINCT  name, pet_id, mp.status_id, owner_id, link
+    const getPetsByStatusQuery = `SELECT name, pet_id, mp.status_id, owner_id, link
     FROM (SELECT * FROM Pets p WHERE owner_id = ?) mp
     INNER JOIN 
     Statuses s ON mp.status_id = s.status_id
