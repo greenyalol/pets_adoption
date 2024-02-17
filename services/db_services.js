@@ -139,7 +139,7 @@ async function deleteFavorite(userID, petID) {
 }
 
 async function getPetsByUser(userID) {
-    const getPetsByStatusQuery = `SELECT name, pet_id, mp.status_id, owner_id, link
+    const getPetsByStatusQuery = `SELECT DISTINCT name, pet_id, status_name, owner_id, link
     FROM (SELECT * FROM Pets p WHERE owner_id = ?) mp
     INNER JOIN 
     Statuses s ON mp.status_id = s.status_id
