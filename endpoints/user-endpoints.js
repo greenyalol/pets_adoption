@@ -1,14 +1,16 @@
-const { getPetByID, advSearch, changeStatus, addFavorite, deleteFavorite, getPetsByUser } = require('../services/db_services');
+const { getPetByID, advSearch, changeStatus, addFavorite, deleteFavorite, getPetsByUser, getUserByEmail } = require('../services/db_services');
+const { userLoginValidation } = require('../middlewares/validation')
 const express = require('express')
 require('dotenv').config({ path: '../.env' });
-const Ajv = require("ajv")
 var cors = require('cors')
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
 
 const app = express();
 
 app.use(cors())
 app.use(express.json());
-const ajv = new Ajv();
 
 //Search Pets link format: http://localhost:3001/pets/search?status=&type=&minHeight=50&maxHeight=60&minWeight=&maxWeight=&name=
 app.get('/pets/search', async (req, res) => {
@@ -22,7 +24,6 @@ app.get('/pets/search', async (req, res) => {
         minWeight: req.query.minWeight ? parseInt(req.query.minWeight) : undefined,
         maxWeight: req.query.maxWeight ? parseInt(req.query.maxWeight) : undefined
     };
-    console.log(searchTerms);
     try {
         const searchResult = await advSearch(
             searchTerms.petStatus,
@@ -32,12 +33,37 @@ app.get('/pets/search', async (req, res) => {
             searchTerms.maxHeight,
             searchTerms.minWeight,
             searchTerms.maxWeight);
-        console.log(searchResult);
         res.json(searchResult);
     } catch (err) {
         res.status('500').json({ error: 'Internal server error' });
     }
 });
+
+//login
+app.post('/login', [userLoginValidation], async (req, res) => {
+    const { user } = req.body;
+    let existedUser = [];
+    try {
+        existedUser = await getUserByEmail(user.email);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+    if (existedUser.length === 0) {
+        res.status(401).json({ error: `User doesn't exist` });
+    } else {
+        const match = await bcrypt.compare(user.password, existedUser[0].password);
+        if (!match) {
+            res.status(401).json({ error: 'Wrong password' });
+        } else {
+            jwt.sign({ user_id: existedUser[0].user_id }, process.env.PRIVATE_KEY, function (err, token) {
+                if (err) {
+                    res.status(500).json({ error: 'Internal server error' });
+                }
+                res.json({ token: token });
+            });
+        }
+    }
+})
 
 //add favorite
 app.put('/pets/:id/save', async (req, res) => {
@@ -62,8 +88,6 @@ app.delete('/pets/:id/unsave', async (req, res) => {
         res.status('500').json({ error: 'Internal server error' });
     }
 })
-
-
 
 //change pet status
 app.put('/pets/:id&:status/adopt', async (req, res) => {
