@@ -5,12 +5,27 @@ require('dotenv').config({ path: '../.env' });
 var cors = require('cors')
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 
 
 const app = express();
 
-app.use(cors())
+app.use(cors(
+    {
+        origin: 'http://localhost:5173',
+        credentials: true
+    }));
 app.use(express.json());
+app.use(cookieParser());
+app.use((req, res, next) => {
+    res.header('Content-Type', 'application/json;charset=UTF-8')
+    res.header('Access-Control-Allow-Credentials', true)
+    res.header(
+        'Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept'
+    )
+    next()
+})
 
 //Search Pets link format: http://localhost:3001/pets/search?status=&type=&minHeight=50&maxHeight=60&minWeight=&maxWeight=&name=
 app.get('/pets/search', async (req, res) => {
@@ -41,17 +56,17 @@ app.get('/pets/search', async (req, res) => {
 
 //login
 app.post('/login', [userLoginValidation], async (req, res) => {
-    const { user } = req.body;
+    const { email, password } = req.body;
     let existedUser = [];
     try {
-        existedUser = await getUserByEmail(user.email);
+        existedUser = await getUserByEmail(email);
     } catch (err) {
         res.status(500).json({ error: 'Internal server error' });
     }
     if (existedUser.length === 0) {
         res.status(401).json({ error: `User doesn't exist` });
     } else {
-        const match = await bcrypt.compare(user.password, existedUser[0].password);
+        const match = await bcrypt.compare(password, existedUser[0].password);
         if (!match) {
             res.status(401).json({ error: 'Wrong password' });
         } else {
@@ -59,7 +74,8 @@ app.post('/login', [userLoginValidation], async (req, res) => {
                 if (err) {
                     res.status(500).json({ error: 'Internal server error' });
                 }
-                res.json({ token: token });
+                res.cookie('token', token, { expire: 24 * 60 * 60 * 1000 });
+                return res.json({ message: "Auth Succeed" });
             });
         }
     }

@@ -4,7 +4,7 @@ const ajv = new Ajv();
 addFormats(ajv);
 
 function userLoginValidation(req, res, next) {
-    const { user } = req.body;
+    const { email, password } = req.body;
     const schema = {
         type: "object",
         properties: {
@@ -22,7 +22,7 @@ function userLoginValidation(req, res, next) {
         additionalProperties: false
     }
     const validate = ajv.compile(schema);
-    const valid = validate(user);
+    const valid = validate({ email, password });
     if (!valid) {
         res.status(400).json({ error: 'Bad request' });
     } else {
