@@ -16,7 +16,6 @@ function execQuery(myQuery, ...params) {
         const c = connection.query(myQuery, params, (err, results, fields) => {
             err ? reject(err) : resolve(JSON.parse(JSON.stringify(results)));
         })
-        console.log(c);
     })
 }
 
@@ -43,23 +42,6 @@ async function advSearch(
     minWeight = 0,
     maxWeight = 999) {
 
-    console.log(petStatus,
-        petType,
-        petName,
-        minHeight,
-        maxHeight,
-        minWeight,
-        maxWeight);
-
-    // if (!petStatus) {
-    //     petStatus = true;
-    // }
-    // const sql = ''
-    // !petStatus ?
-    //     sql = `SELECT status_name FROM Statuses s2 WHERE 1=1`
-    //     :
-    //     sql = `SELECT status_name FROM Statuses s2 WHERE status_name = ?`
-
     const query = `SELECT DISTINCT p.pet_id, name, link, status_name, type_name, height, weight, color, bio, dietary, breed_name
         FROM Pets p 
         INNER JOIN Statuses s ON p.status_id  = s.status_id
@@ -84,7 +66,6 @@ async function advSearch(
 }
 
 async function changeStatus(newStatus, petID, userID) {
-    console.log(newStatus, petID, userID);
     connection.beginTransaction((err) => {
         if (err) throw err;
     })
@@ -138,13 +119,31 @@ async function deleteFavorite(userID, petID) {
     });
 }
 
+async function getFavoritesByUserID(userID) {
+    const favorites = `SELECT DISTINCT name, f.pet_id, status_name, f.owner_id, link, u.fname from Favorites f 
+        INNER JOIN 
+        Users u ON u.user_id = f.owner_id 
+        INNER JOIN 
+        Pets p ON p.pet_id = f.pet_id 
+        INNER JOIN Statuses s ON s.status_id = p.status_id 
+        INNER JOIN 
+        Pictures pic ON pic.pet_id = p.pet_id 
+        where f.owner_id = ?`;
+
+    const getFavoritesQuery = await execQuery(favorites, userID).catch((err) => {
+        throw err.message;
+    })
+
+    return getFavoritesQuery;
+}
+
 async function getPetsByUser(userID) {
-    const getPetsByStatusQuery = `SELECT name, pet_id, mp.status_id, owner_id, link
-    FROM (SELECT * FROM Pets p WHERE owner_id = ?) mp
-    INNER JOIN 
-    Statuses s ON mp.status_id = s.status_id
-    INNER JOIN 
-    Pictures pic USING (pet_id)`;
+    const getPetsByStatusQuery = `SELECT DISTINCT name, pet_id, status_name, owner_id, link
+        FROM (SELECT * FROM Pets p WHERE owner_id = ?) mp
+        INNER JOIN 
+        Statuses s ON mp.status_id = s.status_id
+        INNER JOIN 
+        Pictures pic USING (pet_id)`;
 
     const getPetsByStatus = await execQuery(getPetsByStatusQuery, userID).catch((err) => {
         throw err.message;
@@ -153,7 +152,19 @@ async function getPetsByUser(userID) {
     return getPetsByStatus;
 }
 
+//auth
+async function getUserByEmail(userEmail) {
+    const getUserByEmailQuery = `SELECT user_id, email, password, fname, lname, phone, bio 
+    FROM Users u 
+    WHERE u.email = ?`
+
+    const user = await execQuery(getUserByEmailQuery, userEmail).catch((err) => {
+        throw err.message;
+    });
+
+    return user;
+}
 
 module.exports = {
-    getPetByID, advSearch, changeStatus, addFavorite, deleteFavorite, getPetsByUser
+    getPetByID, advSearch, changeStatus, addFavorite, deleteFavorite, getPetsByUser, getUserByEmail, getFavoritesByUserID
 };
